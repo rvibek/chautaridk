@@ -118,7 +118,7 @@ podman compose --env-file .env.production down -v
 - PostgreSQL 16 binaries: `/opt/homebrew/opt/postgresql@16/bin`
 - Local database: `chautari_dev`
 - Local DB user: `rvibek`
-- Admin login: `admin@chautari.dk` or `editor@chautari.dk` at `/login`
+- Admin login: use the addresses configured in `.env` (`SEED_ADMIN_EMAIL` / `ADMIN_ALLOWED_EMAILS`) at `/login`
 - `GEMINI_API_KEY` in `.env` is valid and tested.
 
 ---

@@ -216,7 +216,7 @@ async function main() {
       .onConflictDoNothing({ target: categories.slug });
   }
 
-  const adminEmail = (process.env.SEED_ADMIN_EMAIL || "admin@chautari.dk")
+  const adminEmail = (process.env.SEED_ADMIN_EMAIL || "admin@example.com")
     .trim()
     .toLowerCase();
   const admin = await seedUser(adminEmail, "SUPER_ADMIN");
@@ -227,7 +227,7 @@ async function main() {
   if (editorEmail) {
     await seedUser(editorEmail, "ADMIN");
   } else if (process.env.NODE_ENV !== "production") {
-    await seedUser("editor@chautari.dk", "ADMIN");
+    await seedUser("editor@example.com", "ADMIN");
   }
 
   const [provider] = await db

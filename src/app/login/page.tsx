@@ -73,7 +73,7 @@ export default async function LoginPage({
               name="email"
               type="email"
               required
-              placeholder="admin@chautari.dk"
+              placeholder="you@example.com"
               autoComplete="email"
             />
             <button type="submit" className="btn btn--dark">

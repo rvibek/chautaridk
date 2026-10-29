@@ -150,11 +150,11 @@ AUTH_SECRET=generate-a-random-secret
 AUTH_TRUST_HOST=true
 APP_URL=http://localhost:3000
 
-ADMIN_ALLOWED_EMAILS=admin@chautari.dk,editor@chautari.dk
-SUPER_ADMIN_EMAILS=admin@chautari.dk
+ADMIN_ALLOWED_EMAILS=admin@example.com,editor@example.com
+SUPER_ADMIN_EMAILS=admin@example.com
 
 DEV_LOGIN_ENABLED=true
-SEED_ADMIN_EMAIL=admin@chautari.dk
+SEED_ADMIN_EMAIL=admin@example.com
 
 # AI intake (optional for browsing the site, required for AI drafts)
 GEMINI_API_KEY=your-google-ai-studio-key
@@ -196,8 +196,9 @@ npm run db:seed
 This creates:
 
 - categories
-- `admin@chautari.dk` as `SUPER_ADMIN`
-- `editor@chautari.dk` as `ADMIN`
+- the address in `SEED_ADMIN_EMAIL` as `SUPER_ADMIN`
+- the address in `SEED_EDITOR_EMAIL` as `ADMIN`, if set
+- `editor@example.com` as `ADMIN` in non-production when `SEED_EDITOR_EMAIL` is empty
 - Gemini 2.5 Flash as the default model
 - ad slots
 - style guide, prompt template and glossary
@@ -225,11 +226,11 @@ Open:
 
 When `DEV_LOGIN_ENABLED=true` and `NODE_ENV` is not `production`, `/login` shows a passwordless local login form.
 
-Use one of the allowed emails:
+Use one of the emails configured in `.env`:
 
 ```text
-admin@chautari.dk
-editor@chautari.dk
+admin@example.com
+editor@example.com
 ```
 
 The email must also appear in `ADMIN_ALLOWED_EMAILS`.
@@ -633,6 +634,7 @@ Never commit `.env` or real secrets. `.env` is ignored by Git.
 - Gemini API keys live in server-only environment variables. Never expose them to the browser.
 - Caddy provides HTTPS, HTTP-to-HTTPS redirects and a baseline HSTS/security-header policy in production.
 - Database backups and a restore-test path are implemented; CSP, application-level rate limiting and external uptime monitoring are still to be completed.
+- Public role inboxes (`editorial@`, `news@`, `ads@`, `privacy@`) are intentionally published so readers can contact the newsroom. Admin login identities are not published; use `example.com` placeholders in documentation and set real addresses only in `.env` or the server environment.
 
 ---
 
