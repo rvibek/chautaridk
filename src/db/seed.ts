@@ -205,6 +205,10 @@ async function seedPublishedSample(input: {
 async function main() {
   console.log("Seeding Chautari database...");
 
+  const seedSampleContent =
+    process.env.NODE_ENV !== "production" ||
+    process.env.SEED_SAMPLE_CONTENT === "true";
+
   for (const category of categorySeed) {
     await db
       .insert(categories)
@@ -216,7 +220,15 @@ async function main() {
     .trim()
     .toLowerCase();
   const admin = await seedUser(adminEmail, "SUPER_ADMIN");
-  await seedUser("editor@chautari.dk", "ADMIN");
+
+  const editorEmail = (process.env.SEED_EDITOR_EMAIL || "")
+    .trim()
+    .toLowerCase();
+  if (editorEmail) {
+    await seedUser(editorEmail, "ADMIN");
+  } else if (process.env.NODE_ENV !== "production") {
+    await seedUser("editor@chautari.dk", "ADMIN");
+  }
 
   const [provider] = await db
     .insert(aiProviders)
@@ -328,7 +340,7 @@ async function main() {
     where: eq(categories.slug, "kanun-visa"),
   });
 
-  if (kanunCategory) {
+  if (seedSampleContent && kanunCategory) {
     const [sample] = await db
       .insert(articles)
       .values({
@@ -380,7 +392,7 @@ async function main() {
     }
   }
 
-  if (process.env.NODE_ENV !== "production" || process.env.SEED_SAMPLE_CONTENT === "true") {
+  if (seedSampleContent) {
     const [columnist] = await db
       .insert(columnists)
       .values({

@@ -581,6 +581,35 @@ Assumes one full-time developer with part-time design/editorial support. Part-ti
 
 ## 18. Progress log
 
+### 29 October 2026
+
+**Completed**
+
+- Repository initialized and initial commit created.
+- R0 container packaging:
+  - Next.js standalone output.
+  - multi-stage Dockerfile with app and tools targets.
+  - Compose stack with PostgreSQL, migration, seed, app and Caddy.
+  - production environment template.
+  - Caddy reverse proxy and security headers.
+  - backup, restore, restore-test, deploy and smoke-test scripts.
+  - GitHub Actions CI and GHCR image publishing.
+- Production-safe seed: demo stories and the demo editor are skipped in production.
+- Local Podman verification:
+  - both images built;
+  - migrations and production seed ran;
+  - app served health, homepage and protected `/admin`;
+  - Caddyfile validated;
+  - backup restored into a scratch database with verified row counts.
+
+**Next**
+
+1. Push to GitHub and confirm CI and container publishing.
+2. Provision Hetzner CPX02.
+3. Configure DNS, Cloudflare, Google OAuth and production environment.
+4. Deploy and complete the R0 acceptance checklist.
+5. Continue R1 polish.
+
 ### 28 October 2026
 
 **Completed**

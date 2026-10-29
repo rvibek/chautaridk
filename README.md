@@ -4,7 +4,7 @@ Nepali-language news portal for the Nepali diaspora in Denmark.
 
 The project is currently at **R0/R1 foundation**. Public pages, the editorial console, authentication, the database schema, the draft → review → publish flow, and the first AI intake pipeline are implemented. Media uploads, newsletter, Nepal curation, comments, and public user accounts are planned for later releases. See [`PLAN.md`](./PLAN.md) for the full release plan.
 
-> **Last worked:** 28 October 2026. Milestone 1 (published-article revisions) and Milestone 2 (AI intake) are complete and verified. The next task is the remaining R0 operations work: Dockerfile, Docker Compose, Caddy, backup/restore, GitHub Actions and the first Git commit. See [§17](#17-what-to-do-when-resuming-this-work) and [`HANDOFF.md`](./HANDOFF.md).
+> **Last worked:** 29 October 2026. Milestone 1 (published-article revisions), Milestone 2 (AI intake), and the R0 container packaging are complete and verified. The next task is provisioning Hetzner and performing the first live deployment, then continuing R1 polish. See [§17](#17-what-to-do-when-resuming-this-work), [`DEPLOYMENT.md`](./DEPLOYMENT.md) and [`HANDOFF.md`](./HANDOFF.md).
 
 ---
 
@@ -52,6 +52,14 @@ The project is currently at **R0/R1 foundation**. Public pages, the editorial co
   - ad slots
   - translation style guide, prompt template, glossary
   - local sample stories and one columnist
+  - production-safe mode that skips demo content and the demo editor account
+- Production packaging:
+  - multi-stage Dockerfile with standalone app and separate migration/seed image
+  - Docker Compose stack with PostgreSQL, app and Caddy
+  - Caddy reverse proxy and security headers
+  - backup, restore and restore-test scripts
+  - GitHub Actions CI and GHCR container publishing
+  - deployment runbook in [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 
 ### Not implemented yet
 
@@ -61,7 +69,8 @@ The project is currently at **R0/R1 foundation**. Public pages, the editorial co
 - Newsletter.
 - Nepal section (feature-flagged off).
 - Public authentication, comments, votes, moderation.
-- Docker Compose, Caddy, backups and CI/CD. These are the remaining R0 operations work.
+- Hetzner provisioning and the first live deployment. The deployment files are ready; the account does not exist yet.
+- Sentry and external uptime monitoring.
 
 ### Last verified — 28 October 2026
 
@@ -70,7 +79,11 @@ The project is currently at **R0/R1 foundation**. Public pages, the editorial co
 - The revision workflow was exercised end to end: edit a live article, keep it public, approve the revision, and swap the live copy.
 - AI URL intake was tested with a real source and a valid `GEMINI_API_KEY`; the output contained a source-backed Nepali angle and the required `Nepali angle:` line in the back-translation.
 - The temporary test draft was deleted; no test article was left behind.
-- The dev server is running at `http://localhost:3000`.
+- The production image and tools image build successfully with Podman.
+- The standalone container starts and serves `/api/health`, `/` and the `/admin` redirect.
+- The production seed created the admin and reference data without demo articles; a separate sample-content seed created the expected demo articles.
+- A backup was restored into a scratch database and verified: 7 articles, 1 user and 7 revisions.
+- The Caddyfile passes `caddy validate`.
 
 ---
 
@@ -585,17 +598,22 @@ Hidden for now: `/nepal`, `/bahas`, newsletter, comments.
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `AUTH_SECRET` | Yes | Auth.js signing secret |
 | `AUTH_TRUST_HOST` | Recommended | Trust the configured host |
+| `AUTH_URL` | Production | Public auth URL, e.g. `https://chautari.dk` |
 | `APP_URL` | Yes | Public base URL for metadata and links |
 | `ADMIN_ALLOWED_EMAILS` | Yes | Comma-separated admin allowlist |
 | `SUPER_ADMIN_EMAILS` | Yes | Comma-separated superadmin allowlist |
 | `DEV_LOGIN_ENABLED` | Development | Enable passwordless local login |
 | `SEED_ADMIN_EMAIL` | Seed only | Email for the seeded superadmin |
+| `SEED_EDITOR_EMAIL` | Optional | Additional admin created by the seed |
+| `SEED_SAMPLE_CONTENT` | Production | Must be `false` to skip demo stories and the demo editor |
 | `AUTH_GOOGLE_ID` | Production | Google OAuth client ID |
 | `AUTH_GOOGLE_SECRET` | Production | Google OAuth client secret |
 | `GEMINI_API_KEY` | AI intake | Google AI Studio API key |
 | `GEMINI_MODEL` | Optional | Override the model id; defaults to the registry default |
 | `RESEND_API_KEY` | Later | Newsletter/email |
 | `R2_*` | Later | Cloudflare R2 media storage |
+| `R2_REMOTE` | Optional | `rclone` target for offsite database backups |
+| `BACKUP_RETENTION_DAYS` | Optional | Local backup retention; defaults to 14 |
 
 Never commit `.env` or real secrets. `.env` is ignored by Git.
 
@@ -611,37 +629,38 @@ Never commit `.env` or real secrets. `.env` is ignored by Git.
 - The same admin may approve their own story, but the audit log records the self-approval.
 - AI intake refuses localhost, private and link-local addresses, follows at most three redirects, and caps source responses at 2.5 MB.
 - Gemini API keys live in server-only environment variables. Never expose them to the browser.
-- HTTPS, HSTS, CSP, rate limiting and backups are deployment tasks still to be completed.
+- Caddy provides HTTPS, HTTP-to-HTTPS redirects and a baseline HSTS/security-header policy in production.
+- Database backups and a restore-test path are implemented; CSP, application-level rate limiting and external uptime monitoring are still to be completed.
 
 ---
 
-## 15. Deployment notes
+## 15. Deployment
 
-The repository does **not** yet contain Docker Compose or Caddy configuration. That is the next R0 operations task.
+The repository now contains the complete container stack:
 
-Planned production setup:
+- `Dockerfile` — multi-stage production image, Next.js standalone runtime, and a separate `tools` target for migrations and seeding.
+- `compose.yml` — PostgreSQL 16, one-shot migration, app, optional one-shot seed, and Caddy.
+- `Caddyfile` — automatic HTTPS, compression, reverse proxy and basic security headers.
+- `.env.production.example` — production environment template.
+- `scripts/backup-db.sh` — `pg_dump` with retention and optional `rclone` upload.
+- `scripts/restore-db.sh` — guarded restore into the live database.
+- `scripts/restore-test.sh` — restores a dump into a scratch database and verifies row counts.
+- `scripts/deploy.sh` — pull images, migrate, start app and Caddy, then smoke test.
+- `.github/workflows/ci.yml` — migrations, production seed, typecheck, lint and build.
+- `.github/workflows/container.yml` — publishes app and tools images to GHCR.
+
+The target production setup remains:
 
 - Hetzner Cloud CPX02 (1 GB) for development/private beta.
 - Upgrade to CPX11 (2 GB) before public launch.
-- Ubuntu LTS.
-- Docker Compose: Next.js standalone app, PostgreSQL, Caddy.
-- Cloudflare DNS, TLS and proxy.
-- Media on Cloudflare R2.
-- Build in GitHub Actions, deploy image over SSH.
-- Daily `pg_dump` to offsite storage.
-- `DEV_LOGIN_ENABLED=false` in production.
-- Sentry + external uptime monitoring.
+- Ubuntu LTS with Docker (or Podman) and a swap file.
+- Caddy in front of the Next.js app.
+- Cloudflare DNS and TLS. Start with the DNS record set to “DNS only” so Caddy can obtain its certificate.
+- Cloudflare R2 for media and optional offsite backups.
+- `DEV_LOGIN_ENABLED=false` and `SEED_SAMPLE_CONTENT=false` in production.
+- Sentry and external uptime monitoring are still to be added.
 
-Until those files exist, a manual deployment can use:
-
-```bash
-npm ci
-npm run db:migrate
-npm run build
-npm start
-```
-
-with PostgreSQL and a reverse proxy managed separately.
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the full runbook. The stack has been built and tested locally with Podman, including migrations, production-safe seed, backup and restore. It has **not** been deployed to Hetzner because the account does not exist yet.
 
 ---
 
@@ -747,7 +766,7 @@ Run `npm run db:migrate`. The `0001` migration backfills category, kind, rights,
 
 ## 17. What to do when resuming this work
 
-Milestone 1 and Milestone 2 are complete. Do not rebuild them; verify them and continue with R0 operations.
+Milestone 1, Milestone 2 and the R0 container packaging are complete. Do not rebuild them; verify them and continue with the live deployment.
 
 1. Start PostgreSQL:
    ```bash
@@ -770,14 +789,16 @@ Milestone 1 and Milestone 2 are complete. Do not rebuild them; verify them and c
    - `GEMINI_API_KEY` in `.env` is valid.
    - The default Gemini model is active at `/admin/models`.
    - The translation profile and `translate-news` template are at version 2.
-7. Finish R0 operations work:
-   - Dockerfile
-   - `docker-compose.yml`
-   - Caddy configuration
-   - backup and restore scripts
-   - GitHub Actions CI
-   - Git repository initialization and first commit
-8. Then start R1:
+7. Provision Hetzner CPX02:
+   - Ubuntu LTS, swap, firewall, Docker or Podman.
+   - DNS, Cloudflare and Google OAuth redirect URI.
+   - First deploy using [`DEPLOYMENT.md`](./DEPLOYMENT.md).
+8. Prove the R0 acceptance checklist:
+   - admin login → create draft → publish → public page;
+   - backup and restore test;
+   - `/admin` is protected;
+   - CI build and GHCR image publishing are reproducible.
+9. Then start R1:
    - TipTap editor polish
    - media library
    - ad campaign management
@@ -785,23 +806,19 @@ Milestone 1 and Milestone 2 are complete. Do not rebuild them; verify them and c
    - Nepal section behind its feature flag
    - model management UI
 
-### Suggested first task tomorrow
+### Suggested first task
 
-Start with the R0 operations files. The application is already deployable in principle, but it is not yet packaged or reproducible. The order should be:
+Push the current commit to GitHub, let CI run, and confirm both GHCR images are published. Then provision the Hetzner server and follow the first-deployment section of [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
-1. Git init and a clean first commit.
-2. `Dockerfile` and `docker-compose.yml`.
-3. Caddy reverse proxy.
-4. Backup and restore scripts, then a real restore test.
-5. GitHub Actions build and deploy workflow.
-
-Keep the gold-example prompt work for after R0: it is an editorial-quality improvement, not a blocker for deployment.
+Keep the gold-example prompt work for later: it is an editorial-quality improvement, not a blocker for launch.
 
 ---
 
 ## 18. Related documents
 
 - [`PLAN.md`](./PLAN.md) — agreed product and release plan.
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — container, deployment, backup and CI runbook.
+- [`HANDOFF.md`](./HANDOFF.md) — current session handoff and next steps.
 - `backup/` — original static HTML pages, preserved for design reference.
 
 ---

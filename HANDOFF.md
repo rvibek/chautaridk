@@ -1,7 +1,8 @@
 # Chautari.dk — handoff
 
-**Date:** 28 October 2026  
-**Status:** Milestone 1 and Milestone 2 complete. Next work is R0 operations.
+**Date:** 29 October 2026
+
+**Status:** Milestone 1, Milestone 2 and R0 container packaging complete. Next work is the first Hetzner deployment.
 
 ---
 
@@ -28,152 +29,195 @@
 - AI output is always a `DRAFT`.
 - Reprompt from the stored source text.
 - Model, prompt version and token usage recorded per revision.
-- System instruction now requires a **source-backed Nepali angle**:
+- System instruction requires a **source-backed Nepali angle**:
   - the dek or first two or three paragraphs must explain why the story matters to Nepali readers in Denmark;
   - the model must not invent a Nepal–Denmark connection;
   - if there is no genuine link, it says so;
   - a separate `नेपाली एंगल` heading is optional;
   - back-translation must include a line starting with `Nepali angle:`.
 
+### R0 — container packaging and operations
+
+- Next.js standalone production output.
+- Multi-stage `Dockerfile` with:
+  - `runner` — minimal non-root app image;
+  - `tools` — migration and seed image.
+- `compose.yml` with PostgreSQL 16, migration, seed, app and Caddy.
+- `Caddyfile` with automatic HTTPS, compression, reverse proxy and basic headers.
+- Production environment template.
+- Production-safe seed:
+  - skips demo stories and the demo editor in production;
+  - creates the configured admin account and reference data.
+- Backup, restore, restore-test, deploy and smoke-test scripts.
+- GitHub Actions:
+  - CI with PostgreSQL, migrations, production seed, typecheck, lint and build;
+  - GHCR image publishing for app and tools.
+- Deployment runbook.
+
 ---
 
 ## 2. Verified today
 
+### Application
+
 - `npm run typecheck` passes.
 - `npm run lint` passes.
-- A clean migration and seed were tested on a fresh database.
-- Revision workflow tested end to end:
-  - edit a live article;
-  - keep the public page unchanged while editing;
-  - submit the revision;
-  - approve and publish;
-  - confirm the public page updates.
-- Discard, unpublish, republish and private preview tested.
-- AI URL intake tested with a real source and a valid `GEMINI_API_KEY`.
-- The generated draft included a genuine, source-backed Nepali angle and the required `Nepali angle:` back-translation line.
-- The temporary test article and orphaned source were deleted.
+- `npm run build` passes and emits `.next/standalone/server.js`.
+- Revision workflow previously tested end to end.
+- AI URL intake previously tested with a valid key and a real source.
 
-Latest manual check:
+### Containers with Podman
 
-- `GET /` → `200`
-- `GET /login` → `200`
-- `GET /admin` unauthenticated → `307` redirect to login (expected)
-- Dev server: `http://localhost:3000`
+- `chautari:local` built successfully.
+- `chautari:tools` built successfully.
+- Migrations ran successfully in the tools container.
+- Production seed created the admin and reference data and **skipped demo articles**.
+- Sample-content seed created the expected demo articles when explicitly enabled.
+- App container started as a non-root user.
+- `GET /api/health` → `200`.
+- `GET /` → `200`.
+- `GET /admin` → `307` to `/login?error=unauthorized`.
+- Caddyfile passed `caddy validate`.
+- Backup created.
+- Restore test passed with 7 articles, 1 user and 7 revisions in the scratch database.
+
+The test compose stack is local only and can be removed with:
+
+```bash
+podman compose --env-file .env.production down -v
+```
 
 ---
 
-## 3. Local environment
+## 3. Git and repository
+
+- Git repository initialized.
+- Initial commit: `82ad2ba init`.
+- Remote target: `https://github.com/rvibek/chautaridk.git`.
+- `.env`, `.env.production` and backups are ignored.
+- `.env.example` and `.env.production.example` are intentionally tracked.
+
+---
+
+## 4. Local environment
 
 - Node: `v26.10.0`
 - npm: `11.19.1`
+- Podman: `6.1.4`
+- podman-compose: `1.6.0`
+- Docker: not installed
 - PostgreSQL 16 binaries: `/opt/homebrew/opt/postgresql@16/bin`
 - Local database: `chautari_dev`
 - Local DB user: `rvibek`
 - Admin login: `admin@chautari.dk` or `editor@chautari.dk` at `/login`
-- The dev server is currently running in the background.
 - `GEMINI_API_KEY` in `.env` is valid and tested.
-
-The workspace is **not yet a Git repository**. All changes are uncommitted.
 
 ---
 
-## 4. Test content currently in the local database
+## 5. Test content in the local development database
 
-These were created during AI validation and are still present:
+These remain in `chautari_dev`:
 
 - `story-2723ff37` — published
 - `story-fe03ae3f` — published
 
-They were not deleted because they may be useful for checking the editor and public pages. Do not remove them without confirming they are disposable.
+They were created during AI validation. Do not remove them without confirming they are disposable.
 
 The temporary FIDI Focus test draft was deleted.
 
----
-
-## 5. Important files changed today
-
-- `src/lib/ai/draft.ts` — true Gemini `systemInstruction`, Nepali-angle rules, back-translation requirement.
-- `src/db/seed.ts` — version 2 translation profile and prompt template.
-- `drizzle/0002_nepali_angle_prompt.sql` — updates existing installs to version 2.
-- `drizzle/meta/_journal.json` — records migration `0002`.
-- `README.md` — status, verification notes and resume instructions.
-- Revision workflow files:
-  - `src/actions/articles.ts`
-  - `src/lib/revisions.ts`
-  - `src/app/admin/stories/[id]/page.tsx`
-  - `src/components/admin/story-form.tsx`
-  - `src/app/admin/review/page.tsx`
-  - `src/lib/admin.ts`
-  - `src/lib/articles.ts`
-  - `src/app/(site)/article/[slug]/page.tsx`
-- AI intake files:
-  - `src/actions/intake.ts`
-  - `src/lib/source-extract.ts`
-  - `src/components/admin/new-story-intake.tsx`
+The separate container test database currently contains sample content from the sample-seed test. It is disposable.
 
 ---
 
-## 6. Next session — recommended order
+## 6. Important files added or changed
 
-1. **Git init and first commit.**
-   - Confirm `.env` and local artifacts are ignored.
-   - Commit the current working application before adding deployment files.
-2. **R0 packaging.**
-   - `Dockerfile` using the Next.js standalone output.
-   - `docker-compose.yml` with app, PostgreSQL and Caddy.
-   - Caddy reverse proxy and HTTPS configuration.
-3. **Operations.**
-   - Backup script for PostgreSQL.
-   - Restore script and a real restore test.
-   - Health check and deployment notes.
-4. **CI/CD.**
-   - GitHub Actions: install, typecheck, lint, build.
-   - Deployment workflow for Hetzner.
-5. **Then R1 polish.**
-   - Gold examples for the Nepali-angle prompt.
-   - TipTap editor.
-   - Media library.
-   - Ad campaign management.
-   - Scheduling and newsletter.
-   - Nepal section behind its feature flag.
-   - Model management UI.
+### Deployment
 
-The gold-example prompt work is not a deployment blocker. R0 packaging comes first.
+- `Dockerfile`
+- `.dockerignore`
+- `compose.yml`
+- `Caddyfile`
+- `.env.production.example`
+- `DEPLOYMENT.md`
+- `scripts/backup-db.sh`
+- `scripts/restore-db.sh`
+- `scripts/restore-test.sh`
+- `scripts/deploy.sh`
+- `scripts/smoke-test.sh`
+- `.github/workflows/ci.yml`
+- `.github/workflows/container.yml`
+
+### Application and configuration
+
+- `next.config.ts` — standalone output.
+- `src/db/seed.ts` — production-safe seed guard and optional editor account.
+- `.gitignore` — tracks environment templates, ignores backups.
+- `.env.example` — seed options.
+- `README.md`
+- `PLAN.md`
+- `HANDOFF.md`
 
 ---
 
-## 7. Blockers and external dependencies
+## 7. Next session — recommended order
 
-- Real Google OAuth requires Google Cloud credentials and allowlisted accounts.
-- Hetzner provisioning requires account access.
+1. Push the current commit to GitHub.
+2. Confirm CI passes.
+3. Confirm both GHCR images are published.
+4. Provision Hetzner CPX02:
+   - Ubuntu LTS;
+   - swap;
+   - firewall;
+   - Docker or Podman.
+5. Configure DNS and Cloudflare:
+   - start with DNS-only so Caddy can obtain a certificate;
+   - switch to proxied and Full (strict) after HTTPS works.
+6. Configure Google OAuth redirect URI.
+7. Create `.env.production` on the server.
+8. Pull images, migrate, seed and start the stack.
+9. Run the R0 acceptance checklist in `DEPLOYMENT.md`.
+10. Then continue R1 polish.
+
+---
+
+## 8. Blockers and external dependencies
+
+- Hetzner account does not exist yet.
 - Cloudflare DNS/TLS and R2 require account access.
+- Google OAuth requires Google Cloud credentials and allowlisted accounts.
 - Resend requires an API key and verified sending domain.
-- Docker is not installed on the local machine; Compose files can be written but not run locally.
 - Sentry and production monitoring require an account.
-- The workspace still needs to be initialized as a Git repository.
+- The GHCR packages may need their visibility changed to public, or the server must authenticate before pulling.
 
 ---
 
-## 8. Commands
+## 9. Commands
 
 ```bash
-# Start PostgreSQL (if not already running)
+# Local application
 brew services start postgresql@16
-
-# Check database
 pg_isready
-
-# Apply migrations
 npm run db:migrate
-
-# Seed
 npm run db:seed
-
-# Start development server
 npm run dev
 
 # Checks
 npm run typecheck
 npm run lint
 npm run build
+
+# Container build
+podman build --target runner -t chautari:local .
+podman build --target tools -t chautari:tools .
+
+# Container stack
+cp .env.production.example .env.production
+podman compose --env-file .env.production up -d db
+podman compose --env-file .env.production run --rm migrate
+podman compose --env-file .env.production run --rm seed
+podman compose --env-file .env.production up -d app
+
+# Backup and restore test
+./scripts/backup-db.sh
+./scripts/restore-test.sh backups/chautari-YYYYMMDDTHHMMSSZ.dump
 ```
