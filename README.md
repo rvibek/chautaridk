@@ -2,7 +2,7 @@
 
 Nepali-language news portal for the Nepali diaspora in Denmark.
 
-The project is currently at **R0/R1 foundation**. Public pages, the editorial console, authentication, the database schema, the draft → review → publish flow, and the first AI intake pipeline are implemented. Media uploads, newsletter, Nepal curation, comments, and public user accounts are planned for later releases. See [`PLAN.md`](./PLAN.md) for the full release plan.
+The project is at the **R0/R1 boundary**. Public pages, the editorial console, authentication, the database schema, the draft → review → publish flow, the first AI intake pipeline, and the R0 container packaging are implemented. Media uploads, newsletter, Nepal curation, comments, and public user accounts are planned for later releases. See [`PLAN.md`](./PLAN.md) for the full release plan.
 
 > **Last worked:** 29 October 2026. Milestone 1 (published-article revisions), Milestone 2 (AI intake), and the R0 container packaging are complete and verified. The next task is provisioning Hetzner and performing the first live deployment, then continuing R1 polish. See [§17](#17-what-to-do-when-resuming-this-work), [`DEPLOYMENT.md`](./DEPLOYMENT.md) and [`HANDOFF.md`](./HANDOFF.md).
 
@@ -84,6 +84,8 @@ The project is currently at **R0/R1 foundation**. Public pages, the editorial co
 - The production seed created the admin and reference data without demo articles; a separate sample-content seed created the expected demo articles.
 - A backup was restored into a scratch database and verified: 7 articles, 1 user and 7 revisions.
 - The Caddyfile passes `caddy validate`.
+- GitHub Actions CI passed on `main`.
+- The container workflow published both app and tools images to GHCR.
 
 ---
 

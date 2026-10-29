@@ -81,7 +81,14 @@
 - Backup created.
 - Restore test passed with 7 articles, 1 user and 7 revisions in the scratch database.
 
-The test compose stack is local only and can be removed with:
+### GitHub Actions
+
+- CI passed on `main`.
+- The container workflow built and published both images.
+- Published tags: `latest`, `sha-7cc2d1d`, `tools`, `tools-sha-7cc2d1d`.
+- GHCR packages are readable anonymously, so the server can pull them without a registry login.
+
+The test compose stack was removed after verification with:
 
 ```bash
 podman compose --env-file .env.production down -v
@@ -93,7 +100,9 @@ podman compose --env-file .env.production down -v
 
 - Git repository initialized.
 - Initial commit: `82ad2ba init`.
-- Remote target: `https://github.com/rvibek/chautaridk.git`.
+- R0 deployment commit: `7cc2d1d Add R0 container deployment stack`.
+- Remote: `git@github.com:rvibek/chautaridk.git`.
+- `main` is pushed and tracks `origin/main`.
 - `.env`, `.env.production` and backups are ignored.
 - `.env.example` and `.env.production.example` are intentionally tracked.
 

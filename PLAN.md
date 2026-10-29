@@ -601,6 +601,8 @@ Assumes one full-time developer with part-time design/editorial support. Part-ti
   - app served health, homepage and protected `/admin`;
   - Caddyfile validated;
   - backup restored into a scratch database with verified row counts.
+- GitHub repository pushed; CI passed.
+- Container workflow published app and tools images to GHCR.
 
 **Next**
 

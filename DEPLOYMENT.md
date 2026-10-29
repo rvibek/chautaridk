@@ -221,7 +221,14 @@ The script asks you to type `RESTORE`. It stops the app and Caddy, restores with
 - `ghcr.io/rvibek/chautaridk:tools`
 - `ghcr.io/rvibek/chautaridk:tools-sha-<commit>`
 
-The GitHub Actions token has package write permission. The first published package may default to private; set its visibility to public or authenticate the server before pulling.
+The GitHub Actions token has package write permission. The current packages are readable anonymously. If visibility changes, either make the package public or authenticate the server before pulling.
+
+Current published tags after the first run:
+
+- `latest`
+- `sha-7cc2d1d`
+- `tools`
+- `tools-sha-7cc2d1d`
 
 ### Deployment script
 
