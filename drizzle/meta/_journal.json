@@ -22,6 +22,13 @@
       "when": 1793224926395,
       "tag": "0002_nepali_angle_prompt",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793297853794,
+      "tag": "0003_story_packaging_prompt",
+      "breakpoints": true
     }
   ]
 }

@@ -35,6 +35,18 @@
   - if there is no genuine link, it says so;
   - a separate `नेपाली एंगल` heading is optional;
   - back-translation must include a line starting with `Nepali angle:`.
+- Prompt version 3 adds optional story-packaging blocks:
+  - `:::alert` for safety, legal or community warnings;
+  - `:::table` for comparison tables;
+  - `:::conditions` for eligibility and legal conditions;
+  - `:::options` for practical steps;
+  - `:::verdict` only for analysis, explainers or opinion.
+- React renderers added for alert, verdict, conditions, options and table blocks.
+- The plain-text editor now supports:
+  - bold, italic and links;
+  - blockquotes;
+  - ordered lists;
+  - the block syntax above.
 
 ### R0 — container packaging and operations
 
@@ -65,6 +77,9 @@
 - `npm run build` passes and emits `.next/standalone/server.js`.
 - Revision workflow previously tested end to end.
 - AI URL intake previously tested with a valid key and a real source.
+- Prompt version 3 generated conditions and options blocks for a real source.
+- A temporary article verified the React renderers for alert, verdict, conditions, options and table blocks, plus inline bold.
+- The temporary packaging articles were deleted.
 
 ### Containers with Podman
 

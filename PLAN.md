@@ -603,6 +603,11 @@ Assumes one full-time developer with part-time design/editorial support. Part-ti
   - backup restored into a scratch database with verified row counts.
 - GitHub repository pushed; CI passed.
 - Container workflow published app and tools images to GHCR.
+- Prompt version 3 adds optional structured story packaging:
+  - alert, table, conditions, options and verdict blocks;
+  - verdict restricted to analysis, explainers and opinion.
+- React renderers added for those blocks.
+- Plain-text editor now supports bold, italic, links, blockquotes, ordered lists and the block syntax.
 
 **Next**
 

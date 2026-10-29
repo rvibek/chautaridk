@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { TipTapDoc, TipTapNode } from "@/db/schema";
+import { parseInlineNodes } from "@/lib/content";
 
 function applyMarks(text: ReactNode, node: TipTapNode, key: string): ReactNode {
   if (!node.marks?.length) return <span key={key}>{text}</span>;
@@ -34,6 +35,12 @@ function applyMarks(text: ReactNode, node: TipTapNode, key: string): ReactNode {
     }
     return current;
   }, text);
+}
+
+function renderInline(text: string, key: string): ReactNode {
+  return parseInlineNodes(text).map((child, index) =>
+    renderNode(child, `${key}-inline-${index}`),
+  );
 }
 
 function renderNode(node: TipTapNode, key: string): ReactNode {
@@ -70,6 +77,100 @@ function renderNode(node: TipTapNode, key: string): ReactNode {
       return <blockquote key={key}>{children}</blockquote>;
     case "horizontalRule":
       return <hr key={key} />;
+    case "alertBox": {
+      const tone = String(node.attrs?.tone ?? "info");
+      const title = String(node.attrs?.title ?? "महत्त्वपूर्ण सूचना");
+      const text = String(node.attrs?.text ?? "");
+      return (
+        <aside
+          key={key}
+          className={`fact-check-alert fact-check-alert--${tone}`}
+        >
+          <strong>{title}</strong>
+          {text
+            .split(/\n+/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line, index) => (
+              <p key={`${key}-p-${index}`}>{renderInline(line, `${key}-p-${index}`)}</p>
+            ))}
+        </aside>
+      );
+    }
+    case "verdictBox": {
+      const title = String(
+        node.attrs?.title ?? "चौतारी सम्पादकीय दृष्टिकोण",
+      );
+      const text = String(node.attrs?.text ?? "");
+      return (
+        <aside key={key} className="verdict-box">
+          <h2>{title}</h2>
+          {text
+            .split(/\n+/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line, index) => (
+              <p key={`${key}-p-${index}`}>{renderInline(line, `${key}-p-${index}`)}</p>
+            ))}
+        </aside>
+      );
+    }
+    case "conditionsCard":
+    case "optionsCard": {
+      const title = String(node.attrs?.title ?? "");
+      const items = Array.isArray(node.attrs?.items)
+        ? (node.attrs.items as string[])
+        : [];
+      return (
+        <aside
+          key={key}
+          className={
+            node.type === "conditionsCard" ? "condition-card" : "options-box"
+          }
+        >
+          {title ? <h2>{title}</h2> : null}
+          <ul>
+            {items.map((item, index) => (
+              <li key={`${key}-item-${index}`}>{renderInline(item, `${key}-item-${index}`)}</li>
+            ))}
+          </ul>
+        </aside>
+      );
+    }
+    case "dataTable": {
+      const title = String(node.attrs?.title ?? "");
+      const headers = Array.isArray(node.attrs?.headers)
+        ? (node.attrs.headers as string[])
+        : [];
+      const rows = Array.isArray(node.attrs?.rows)
+        ? (node.attrs.rows as string[][])
+        : [];
+      return (
+        <div key={key} className="table-wrap">
+          {title ? <h3>{title}</h3> : null}
+          <table className="salary-table">
+            {headers.length > 0 ? (
+              <thead>
+                <tr>
+                  {headers.map((header, index) => (
+                    <th key={`${key}-h-${index}`}>{renderInline(header, `${key}-h-${index}`)}</th>
+                  ))}
+                </tr>
+              </thead>
+            ) : null}
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={`${key}-r-${rowIndex}`}>
+                  {row.map((cell, cellIndex) => (
+                    <td key={`${key}-c-${rowIndex}-${cellIndex}`}>{renderInline(cell, `${key}-c-${rowIndex}-${cellIndex}`)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
     default:
       return <span key={key}>{children}</span>;
   }

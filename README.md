@@ -86,6 +86,8 @@ The project is at the **R0/R1 boundary**. Public pages, the editorial console, a
 - The Caddyfile passes `caddy validate`.
 - GitHub Actions CI passed on `main`.
 - The container workflow published both app and tools images to GHCR.
+- Prompt version 3 supports optional packaging blocks: alert, table, conditions, options and verdict.
+- A temporary published article was used to verify the React renderers for those blocks and inline bold formatting; it was deleted afterwards.
 
 ---
 
@@ -342,7 +344,17 @@ The AI pipeline:
 
 The system instruction requires a **Nepali angle** in every story: the dek or first two or three paragraphs must explain why the story matters to Nepali readers living in Denmark. The model may connect it to Danish rules and policy, work and visas, study, tax and living costs, family, health, local services, Nepal–Denmark links, or the practical impact on the Nepali community. It must not invent a Nepal–Denmark connection; if there is no genuine link, it says so in one sentence. A separate “नेपाली एंगल” heading is optional, not a template requirement. The back-translation must include a line starting with `Nepali angle:` so the editor can check it.
 
-The angle rule is stored in the default translation profile and the active `translate-news` prompt template, so it can be edited in the database without a code deploy. A fresh seed creates version 2 of both; migration `0002_nepali_angle_prompt.sql` updates existing installs.
+The angle rule is stored in the default translation profile and the active `translate-news` prompt template, so it can be edited in the database without a code deploy. A fresh seed creates version 3 of the template; migrations `0002_nepali_angle_prompt.sql` and `0003_story_packaging_prompt.sql` update existing installs.
+
+The model is also the chief editor, not the frontend designer. It may use structured content blocks only when the story warrants them:
+
+- `:::alert safety|Title` for a safety, legal or community warning
+- `:::table|Title` for a comparison table
+- `:::conditions|Title` for eligibility rules or legal conditions
+- `:::options|Title` for practical steps
+- `:::verdict|Title` only for analysis, explainers or opinion
+
+It must not generate category badges, bylines, dates, reading time, sidebar widgets, related links or hero graphics. Those are rendered by the application.
 
 AI output is **never published automatically**. An editor must verify facts, names, dates and quotations, then explicitly submit the draft for review.
 
@@ -352,11 +364,19 @@ If `GEMINI_API_KEY` is missing or invalid, intake returns a clear error and does
 
 ### 7.3 Body editor format
 
-The R0 editor is intentionally simple plain text. It stores TipTap-compatible JSON.
+The R0 editor is intentionally simple plain text. It stores TipTap-compatible JSON and renders through React components.
 
 - Separate paragraphs with a blank line.
 - `## Heading` creates a subheading.
 - `- Item` creates a bullet list.
+- `1. Item` creates an ordered list.
+- `**bold**`, `*italic*` and `[link](https://example.com)` create inline formatting.
+- `> Quoted text` creates a blockquote.
+- `:::alert safety|Title` creates a warning box. Tones: `safety`, `legal`, `community`, `info`.
+- `:::table|Title` creates a table from pipe rows.
+- `:::conditions|Title` creates a conditions card.
+- `:::options|Title` creates a practical-options card.
+- `:::verdict|Title` creates an editorial verdict card. Use only for analysis, explainers or opinion.
 
 Example:
 
@@ -365,10 +385,28 @@ Example:
 
 ## उपशीर्षक
 
-दोस्रो अनुच्छेद।
+:::alert safety|सावधानी
+कागजात साथमा राख्नुहोस्।
+:::
 
-- पहिलो बुँदा
-- दोस्रो बुँदा
+:::table|तलब तुलना
+| वर्ष | रकम |
+| --- | --- |
+| २०२५ | ५ लाख |
+| २०२६ | ५.५ लाख |
+:::
+
+:::conditions|मुख्य सर्तहरू
+- वैध बसोबास
+- कामको सम्झौता
+:::
+
+:::options|के गर्न सकिन्छ?
+- SIRI जाँच्नुहोस्
+- कागजात मिलाउनुहोस्
+:::
+
+> “यो नियम सबैलाई लागू हुन्छ।” — अधिकारी
 ```
 
 A full TipTap editor is planned for R1.
@@ -792,7 +830,7 @@ Milestone 1, Milestone 2 and the R0 container packaging are complete. Do not reb
 6. Confirm the AI configuration:
    - `GEMINI_API_KEY` in `.env` is valid.
    - The default Gemini model is active at `/admin/models`.
-   - The translation profile and `translate-news` template are at version 2.
+   - The translation profile and `translate-news` template are at version 3.
 7. Provision Hetzner CPX02:
    - Ubuntu LTS, swap, firewall, Docker or Podman.
    - DNS, Cloudflare and Google OAuth redirect URI.
