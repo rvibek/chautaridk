@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793204508975,
+      "tag": "0000_tidy_cannonball",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793223273884,
+      "tag": "0001_absurd_unicorn",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793224926395,
+      "tag": "0002_nepali_angle_prompt",
+      "breakpoints": true
+    }
+  ]
+}
